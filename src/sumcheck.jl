@@ -1,7 +1,7 @@
 using BinaryFields
 
 function evaluate_lagrange_basis(rs::Vector{T}) where T <: BinaryElem
-    one_elem = T(one(T))
+    one_elem = one(T)
     current_layer = [one_elem + rs[1], rs[1]]
     len = 2
     for i in 2:length(rs)
@@ -44,3 +44,5 @@ function induce_sumcheck_poly(n::Int, sks_vks::Vector{T}, opened_rows::Vector{Ve
 
     return (basis_poly, enforced_sum)
 end 
+
+export induce_sumcheck_poly, evaluate_lagrange_basis

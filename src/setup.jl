@@ -34,4 +34,4 @@ function setup(N::Int, base_field_size::Int, stop_crit::Int)
     return dims
 end
 
-export setup 
+export setup, opt_dims, n_queries, LigeroProofProperties
