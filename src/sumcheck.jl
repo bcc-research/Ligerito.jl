@@ -1,0 +1,46 @@
+using BinaryFields
+
+function evaluate_lagrange_basis(rs::Vector{T}) where T <: BinaryElem
+    one_elem = T(one(T))
+    current_layer = [one_elem + rs[1], rs[1]]
+    len = 2
+    for i in 2:length(rs)
+        next_layer_size = 2 * len
+        next_layer = Vector{T}(undef, next_layer_size)
+
+        ri_p_one = one_elem + rs[i]
+        for j in 1:len
+            next_layer[2*j - 1] = current_layer[j] * ri_p_one
+            next_layer[2*j]   = current_layer[j] * rs[i]
+        end
+
+        current_layer = next_layer
+        len *= 2
+    end
+
+    return current_layer
+end
+
+function induce_sumcheck_poly(n::Int, sks_vks::Vector{T}, opened_rows::Vector{Vector{U}}, v_challenges::Vector{T}, sorted_queries::Vector{Int}, α::T) where {U <: BinaryElem, T <: BinaryElem}
+    gr = evaluate_lagrange_basis(v_challenges)
+    @assert all(length(row) == length(gr) for row in opened_rows)
+    @assert length(opened_rows) == length(sorted_queries)
+
+
+    basis_poly = zeros(T, 2^n)
+    enforced_sum = zero(T)
+    α_pow = one(T)
+
+    for (row, query) in zip(opened_rows, sorted_queries)
+        dot = sum(row .* gr)
+        enforced_sum += dot * α_pow
+
+        qf = T(query)
+        basis_q_evals = evaluate_basis(2^n, sks_vks, qf)
+        basis_poly .+= α_pow .* basis_q_evals
+
+        α_pow *= α
+    end
+
+    return (basis_poly, enforced_sum)
+end 
