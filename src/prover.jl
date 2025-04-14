@@ -1,10 +1,10 @@
 using BinaryFields
 
 struct LigeritoProver{T<:BinaryElem}
-    dims: Vector{Tuple{Int, Int}}
+    dims::Vector{Tuple{Int, Int}}
 end
 
-function prover(prover: LigeritoProver{T}, poly::Vector{T}) where T <: BinaryElem
+function prover(prover::LigeritoProver{T}, poly::Vector{T}) where T <: BinaryElem
     # 0. commit to initial poly 
     # 1. get first k partial evaluations 
     # 2. commit to the claimed partial eval 

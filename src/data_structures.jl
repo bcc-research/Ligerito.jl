@@ -9,7 +9,7 @@ struct RecursiveLigeroProof{T<:BinaryElem}
     merkle_proof::BatchedMerkleProof
 end
 
-function verify(proof::RecursiveLigeroProof{T}, cm: RecursiveLigeroCommitment, sorted_queries, depth) where T <: BinaryElem 
+function verify(proof::RecursiveLigeroProof{T}, cm:: RecursiveLigeroCommitment, sorted_queries, depth) where T <: BinaryElem 
     return MerkleTree.verify(cm.root, proof.merkle_proof; depth = depth, leaves = proof.opened_rows, leaf_indices = sorted_queries)
 end
 
@@ -18,7 +18,7 @@ struct SumcheckTranscript{T<:BinaryElem}
 end
 
 struct LigeritoProof{T <: BinaryElem}
-    recursive_commitments: Vector{RecursiveLigeroCommitment}    
-    recursive_proofs: Vector{RecursiveLigeroProof{T}}
-    sumcheck_transcript: SumcheckTranscript{T}
+    recursive_commitments::Vector{RecursiveLigeroCommitment}    
+    recursive_proofs::Vector{RecursiveLigeroProof{T}}
+    sumcheck_transcript::SumcheckTranscript{T}
 end
