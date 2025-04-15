@@ -2,7 +2,7 @@ import Base: sizeof
 
 using BinaryFields, MerkleTree, BinaryReedSolomon
 
-export encode_poly
+export encode_poly, ligero_commit
 
 next_pow_two(x) = 1 << (1 + floor(Int, log2(x - 1)))
 
@@ -56,6 +56,16 @@ function encode_poly(poly, properties=nothing)
     mat = encode_cols(poly_mat, rs)
 
     mat
+end
+
+function ligero_commit(poly::Vector{T}, m::Int, n::Int, rs::BinaryReedSolomon.ReedSolomonEncoding{T}) where T <: BinaryElem
+    poly_mat = reshape(poly, m, n)
+    mat = encode_cols(poly_mat, rs)
+
+    leaves = eachrow(mat)
+    tree = build_merkle_tree(leaves)
+
+    return RecursiveLigeroWitness(mat, tree)
 end
 
 # function commit(poly; properties=nothing, verbose=false, parallel=true)

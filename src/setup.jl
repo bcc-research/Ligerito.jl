@@ -34,4 +34,30 @@ function setup(N::Int, base_field_size::Int, stop_crit::Int)
     return dims
 end
 
-export setup, opt_dims, n_queries, LigeroProofProperties
+function hardcoded_config(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
+    # hardcode optimal dimensions for N = 2^24
+    dims = Vector{Tuple{Int, Int}}(undef, 2)
+    initial_dims = (2^18, 2^6)
+    dims[1] = (2^14, 2^4)
+    dims[2] = (2^10, 2^4)
+
+    # hardcode amount of random variables we do per recursive step 
+    ks = Vector{Int}(undef, 2)
+    initial_k = 6 
+    ks[1] = 4 
+    ks[2] = 4 
+
+    # prepare reed solomon codes 
+    # 4 is hardcoded inv_rate for now
+    initial_reed_solomon = reed_solomon(T, initial_dims[1], initial_dims[1] * 4)
+    reed_solomon_codes = Vector{BinaryReedSolomon.ReedSolomonEncoding{U}}(undef, 2)
+    for i in 1:2
+        reed_solomon_codes[i] = reed_solomon(U, dims[i][1], dims[i][1] * 4)
+    end
+
+    recursive_steps = 2
+
+    return ProverConfig(recursive_steps, initial_dims, dims, initial_k, ks, initial_reed_solomon, reed_solomon_codes)
+end
+
+export hardcoded_config

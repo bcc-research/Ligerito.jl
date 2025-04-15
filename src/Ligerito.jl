@@ -1,8 +1,9 @@
 module Ligerito 
 
-include("./setup.jl")
 include("./data_structures.jl")
-include("./sumcheck.jl")
+include("./setup.jl")
+include("emulated_fs.jl")
+include("./sumcheck_polys.jl")
 include("./prover.jl")
 include("./ligero.jl")
 

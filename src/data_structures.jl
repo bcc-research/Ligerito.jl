@@ -1,4 +1,19 @@
-using BinaryFields, MerkleTree
+using BinaryFields, MerkleTree, BinaryReedSolomon
+
+struct ProverConfig{T, U <: BinaryElem}
+    recursive_steps::Int
+    initial_dims::Tuple{Int, Int}
+    dims::Vector{Tuple{Int, Int}} 
+    initial_k::Int
+    ks::Vector{Int}
+    initial_reed_solomon::BinaryReedSolomon.ReedSolomonEncoding{T}
+    reed_solomon_codes::Vector{BinaryReedSolomon.ReedSolomonEncoding{U}}
+end
+
+struct RecursiveLigeroWitness{T<:BinaryElem}
+    mat::Matrix{T}
+    tree::CompleteMerkleTree
+end
 
 struct RecursiveLigeroCommitment 
     root::MerkleRoot
@@ -22,3 +37,5 @@ struct LigeritoProof{T <: BinaryElem}
     recursive_proofs::Vector{RecursiveLigeroProof{T}}
     sumcheck_transcript::SumcheckTranscript{T}
 end
+
+export ProverSetup, RecursiveLigeroCommitment, RecursiveLigeroProof, LigeritoProof, SumcheckTranscript 

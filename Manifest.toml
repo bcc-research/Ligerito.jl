@@ -2,7 +2,7 @@
 
 julia_version = "1.11.2"
 manifest_format = "2.0"
-project_hash = "89d803c660dc9f653ab41a4504fd80bb4a07bb46"
+project_hash = "9720f6d06f115e629d5a06c7ba5f201b0e3b0a2e"
 
 [[deps.BinaryFields]]
 deps = ["Random", "SIMD"]

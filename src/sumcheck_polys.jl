@@ -21,21 +21,21 @@ function evaluate_lagrange_basis(rs::Vector{T}) where T <: BinaryElem
     return current_layer
 end
 
-function induce_sumcheck_poly(n::Int, sks_vks::Vector{T}, opened_rows::Vector{Vector{U}}, v_challenges::Vector{T}, sorted_queries::Vector{Int}, α::T) where {U <: BinaryElem, T <: BinaryElem}
+function induce_sumcheck_poly(n::Int, sks_vks::Vector{T}, opened_rows::Vector{Vector{T}}, v_challenges::Vector{U}, sorted_queries::Vector{Int}, α::U) where {U <: BinaryElem, T <: BinaryElem}
     gr = evaluate_lagrange_basis(v_challenges)
     @assert all(length(row) == length(gr) for row in opened_rows)
     @assert length(opened_rows) == length(sorted_queries)
 
 
-    basis_poly = zeros(T, 2^n)
-    enforced_sum = zero(T)
-    α_pow = one(T)
+    basis_poly = zeros(U, 2^n)
+    enforced_sum = zero(U)
+    α_pow = one(U)
 
     for (row, query) in zip(opened_rows, sorted_queries)
         dot = sum(row .* gr)
         enforced_sum += dot * α_pow
 
-        qf = T(query)
+        qf = T(query - 1)
         basis_q_evals = evaluate_basis(2^n, sks_vks, qf)
         basis_poly .+= α_pow .* basis_q_evals
 
