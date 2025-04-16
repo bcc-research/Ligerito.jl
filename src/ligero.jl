@@ -17,28 +17,29 @@ function encode_cols(poly_mat, rs; parallel=true)
     return hcat(encoded_columns...)
 end
 
-function encode_poly(poly, properties=nothing)
-    T_poly = eltype(poly)
+# function encode_cols(poly_mat, rs; parallel=true)
+#     n_cols = size(poly_mat, 2)
+#     out = Matrix{eltype(poly_mat)}(undef, block_length(rs), n_cols)
 
-    if isnothing(properties)
-        properties = LigeroProofProperties(100, 4, bitsize(T_poly), 128)
-    end
+#     if parallel
+#         Threads.@threads for j in 1:n_cols
+#             out[:, j] = encode_non_systematic!(rs, view(poly_mat, :, j))
+#         end
+#     else
+#         for j in 1:n_cols
+#             out[:, j] = encode_non_systematic!(rs, view(poly_mat, :, j))
+#         end
+#     end
 
-    m, n = opt_dims(length(poly), properties)
-    rs = reed_solomon(T_poly, m, m*properties.inv_rate)
-
-    poly_mat = reshape(poly, m, n)
-    mat = encode_cols(poly_mat, rs)
-
-    mat
-end
+#     return out
+# end
 
 function ligero_commit(poly::Vector{T}, m::Int, n::Int, rs::BinaryReedSolomon.ReedSolomonEncoding{T}) where T <: BinaryElem
     poly_mat = reshape(poly, m, n)
-    @time mat = encode_cols(poly_mat, rs)
+    mat = encode_cols(poly_mat, rs)
 
     leaves = eachrow(mat)
-    @time tree = build_merkle_tree(leaves)
+    tree = build_merkle_tree(leaves)
 
     return RecursiveLigeroWitness(mat, tree)
 end
