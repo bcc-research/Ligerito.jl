@@ -2,6 +2,7 @@ using BinaryFields, MultilinearPoly, Sumcheck, BinaryReedSolomon, MerkleTree
 using StatsBase
 
 function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryElem, U <: BinaryElem}
+    
     # initialize fiat shamir emulator: 
     fs = FS(1234)
 
@@ -12,7 +13,7 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
     proof = LigeritoProof{T, U}()
 
     # here we commit to 2^24 via matrix of 2^18 * 2^6
-    println("First cm")
+    elapsed = @elapsed begin
     @time wtns1 = ligero_commit(poly, config.initial_dims[1], config.initial_dims[2], config.initial_reed_solomon)
     cm1 = RecursiveLigeroCommitment(get_root(wtns1.tree))
     # write to the proof
@@ -22,12 +23,20 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
     partial_evals_1 = [get_field(fs, U) for _ in 1:config.initial_k]
 
     # first time we need to up-cast 
-    converted = convert.(U, poly)
+    # println("Casting to big field")
+    converted = Vector{U}(undef, length(poly))
+    @time Threads.@threads for i in 1:length(poly)
+        converted[i] = convert(U, poly[i])
+    end
+    # @time converted = convert.(U, poly)
     f = MultiLinearPoly(converted)
 
     # now partially evaluate poly in first k challenges 
     # we don't need to store previous values of f!
-    f = partial_eval(f, partial_evals_1) # f is now 2^18
+    @time f = partial_eval(f, partial_evals_1) # f is now 2^18
+
+    end
+    println("!!!!!!!!!! To initialize it took $(elapsed) seconds !!!!!!!!!!") 
 
     # now instead of sending it to the verifier let's commit to it again and induce a sumcheck instance
     # this takes 2^18 poly and makes it 2^14 * 2^4 end encodes it
@@ -52,7 +61,7 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
 
     # finally induce the sumcheck polynomial and enforced sum
     println("Sumcheck poly")
-    @time basis_poly, enforced_sum = induce_sumcheck_poly_parallel(f.n, sks_vks, opened_rows, partial_evals_1, queries, alpha)
+    @time basis_poly, enforced_sum = induce_sumcheck_poly_parallel(f.n, sks_vks, opened_rows, partial_evals_1, queries, alpha) 
     inner_product = sum(f.evals .* basis_poly)
     @assert inner_product == enforced_sum
     sumcheck_prover = SumcheckProverInstance(f, MultiLinearPoly(basis_poly), enforced_sum)    
@@ -67,7 +76,7 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
         rs = Vector{U}(undef, config.ks[i])
         for k in 1:config.ks[i]
             ri = get_field(fs, U) 
-            fold!(sumcheck_prover, ri)
+            @time fold!(sumcheck_prover, ri)
             rs[k] = ri
         end
 
@@ -91,7 +100,8 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
             return proof
         end 
 
-        wtns_i = ligero_commit(f.evals, config.dims[i][1], config.dims[i][2], config.reed_solomon_codes[i])
+        println("another cm")
+        @time wtns_i = ligero_commit(f.evals, config.dims[i][1], config.dims[i][2], config.reed_solomon_codes[i])
         cm_i = RecursiveLigeroCommitment(get_root(wtns_i.tree))
         push!(proof.recursive_commitments, cm_i)
 
@@ -107,7 +117,8 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
         p_i = RecursiveLigeroProof(opened_rows, mtree_proof)
         push!(proof.recursive_proofs, p_i)
 
-        basis_poly, enforced_sum = induce_sumcheck_poly_parallel(sumcheck_prover.f.n, sks_vks, opened_rows, rs, queries, alpha)
+        println("another sumcheck poly")
+        @time basis_poly, enforced_sum = induce_sumcheck_poly_parallel(sumcheck_prover.f.n, sks_vks, opened_rows, rs, queries, alpha)
         inner_product = sum(sumcheck_prover.f.evals .* basis_poly)
         @assert inner_product == enforced_sum
 
