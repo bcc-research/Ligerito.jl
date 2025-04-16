@@ -1,4 +1,5 @@
 import Base: sizeof
+using StatsBase
 
 using BinaryFields, MerkleTree, BinaryReedSolomon
 using Base.Threads, ThreadTools
@@ -34,10 +35,10 @@ end
 
 function ligero_commit(poly::Vector{T}, m::Int, n::Int, rs::BinaryReedSolomon.ReedSolomonEncoding{T}) where T <: BinaryElem
     poly_mat = reshape(poly, m, n)
-    mat = encode_cols(poly_mat, rs)
+    @time mat = encode_cols(poly_mat, rs)
 
     leaves = eachrow(mat)
-    tree = build_merkle_tree(leaves)
+    @time tree = build_merkle_tree(leaves)
 
     return RecursiveLigeroWitness(mat, tree)
 end
