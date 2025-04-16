@@ -1,9 +1,10 @@
-using BinaryFields
+using BinaryFields, StatsBase
 
 config = hardcoded_config(BinaryElem32, BinaryElem128)
 poly = rand(BinaryElem32, 2^24)
 
-proof = prover(config, poly)
+@info "Running with $(Threads.nthreads()) threads"
+@time proof = prover(config, poly)
 
 size_bytes = Base.summarysize(proof)
 size_kb = size_bytes / 1024
