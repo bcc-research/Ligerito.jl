@@ -8,5 +8,3 @@ poly = rand(BinaryElem32, 2^24)
 
 proof_size = sizeof(proof)
 @info "Proof size: $(Base.format_bytes(proof_size))"
-# proof_size = sizeof(proof)
-# @info "Proof size: $(Base.format_bytes(proof_size))"
