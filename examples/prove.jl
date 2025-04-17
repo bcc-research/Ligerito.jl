@@ -8,3 +8,7 @@ poly = rand(BinaryElem32, 2^24)
 
 proof_size = sizeof(proof)
 @info "Proof size: $(Base.format_bytes(proof_size))"
+
+verification_res = verifier(proof)
+println("Verification result: ", verification_res)
+@assert verification_res == true

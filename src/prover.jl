@@ -20,7 +20,6 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
     partial_evals_1 = [get_field(fs, U) for _ in 1:config.initial_k]
 
     # first time we need to up-cast 
-    # println("Casting to big field")
     converted = Vector{U}(undef, length(poly))
     Threads.@threads for i in 1:length(poly)
         converted[i] = convert(U, poly[i])
@@ -63,7 +62,6 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
 
     wtns_prev = wtns2
     for i in 1:config.recursive_steps
-        println("getting into the loop")
         rs = Vector{U}(undef, config.ks[i])
         for k in 1:config.ks[i]
             ri = get_field(fs, U) 
@@ -73,12 +71,10 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
         end
 
         if i == config.recursive_steps
-            # TODO! here we first "send" yr to the verifier before sampling challenges
             absorb!(fs, sumcheck_prover.f.evals)
 
             rows = size(wtns_prev.mat, 1)
-            queries = sort([get_query(fs, rows) for _ in 1:S])
-
+            queries = get_distinct_queries(fs, rows, S)
             opened_rows = [vec(wtns_prev.mat[q, :]) for q in queries]
             mtree_proof = MerkleTree.prove(wtns_prev.tree, queries)
 
