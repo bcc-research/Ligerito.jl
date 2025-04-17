@@ -24,9 +24,6 @@ function verifier(proof::FinalizedLigeritoProof{T, U}) where {T <: BinaryElem, U
 
     sumcheck_verifier, g1 = SumcheckVerifierInstance(MultiLinearPoly(basis_poly), enforced_sum, proof.sumcheck_transcript.tr)
     absorb!(fs, g1)
-
-    prev_root = proof.recursive_commitments[1].root
-    prev_proof = proof.recursive_proofs[1]
     for i in 1:2
         rs = Vector{U}(undef, 4)
         for k in 1:4
@@ -36,11 +33,13 @@ function verifier(proof::FinalizedLigeritoProof{T, U}) where {T <: BinaryElem, U
             rs[k] = ri
         end
 
+        root = proof.recursive_commitments[i].root
+
         if i == 2
             absorb!(fs, proof.final_ligero_proof.yr)
 
             queries = get_distinct_queries(fs, 2^16, S)
-            res = MerkleTree.verify(prev_root, proof.final_ligero_proof.merkle_proof; depth = 16, leaves = proof.final_ligero_proof.opened_rows, leaf_indices = queries)
+            res = MerkleTree.verify(root, proof.final_ligero_proof.merkle_proof; depth = 16, leaves = proof.final_ligero_proof.opened_rows, leaf_indices = queries)
             @assert res == true
 
             # take last random element
@@ -52,26 +51,23 @@ function verifier(proof::FinalizedLigeritoProof{T, U}) where {T <: BinaryElem, U
             return ok
         end 
 
+        liger_proof = proof.recursive_proofs[i]
         absorb!(fs, proof.recursive_commitments[i + 1].root)
         queries = get_distinct_queries(fs, 2^16, S)
-        res = MerkleTree.verify(prev_root, prev_proof.merkle_proof; depth = 16, leaves = prev_proof.opened_rows, leaf_indices = queries)
+        res = MerkleTree.verify(root, liger_proof.merkle_proof; depth = 16, leaves = liger_proof.opened_rows, leaf_indices = queries)
         @assert res == true
 
 
         alpha = get_field(fs, U)
 
-
         # TODO! add this to the verifier config: 
         sks_vks = eval_sk_at_vks(2^14, U)
-        basis_poly, enforced_sum = induce_sumcheck_poly_parallel(14, sks_vks, prev_proof.opened_rows, rs, queries, alpha)
+        basis_poly, enforced_sum = induce_sumcheck_poly_parallel(14, sks_vks, liger_proof.opened_rows, rs, queries, alpha)
 
         gl_i = introduce_new!(sumcheck_verifier, MultiLinearPoly(basis_poly), enforced_sum)
         absorb!(fs, gl_i)
 
         beta = get_field(fs, U)
         glue!(sumcheck_verifier, beta)
-
-
-        prev_root = proof.recursive_commitments[i + 1].root
     end
 end
