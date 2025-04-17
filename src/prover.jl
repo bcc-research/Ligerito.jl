@@ -2,8 +2,7 @@ using BinaryFields, MultilinearPoly, Sumcheck, BinaryReedSolomon, MerkleTree
 using StatsBase
 
 function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryElem, U <: BinaryElem}
-    
-    # initialize fiat shamir emulator: 
+    # initialize fiat shamir: 
     fs = FS(1234)
 
     # for now just hc this too 
@@ -16,7 +15,7 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
     wtns1 = ligero_commit(poly, config.initial_dims[1], config.initial_dims[2], config.initial_reed_solomon)
     cm1 = RecursiveLigeroCommitment(get_root(wtns1.tree))
     proof.initial_ligero_cm = cm1
-
+    absorb!(fs, cm1.root)
     # then we get first k partial evals at once, before we start the sumcheck
     partial_evals_1 = [get_field(fs, U) for _ in 1:config.initial_k]
 
@@ -37,10 +36,11 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
     wtns2 = ligero_commit(f.evals, config.dims[1][1], config.dims[1][2], config.reed_solomon_codes[1])
     cm2 = RecursiveLigeroCommitment(get_root(wtns2.tree))
     push!(proof.recursive_commitments, cm2)
+    absorb!(fs, cm2.root)
     
     # after committing to this poly we need to induce a sumcheck, so sample random rows and separation challenge 
     rows = size(wtns1.mat, 1)
-    queries = sort([get_query(fs, rows) for _ in 1:S])
+    queries = get_distinct_queries(fs, rows, S)
     alpha = get_field(fs, U)
 
     # TODO! add this to the prover config: 
@@ -54,7 +54,8 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
     basis_poly, enforced_sum = induce_sumcheck_poly_parallel(f.n, sks_vks, opened_rows, partial_evals_1, queries, alpha) 
     inner_product = sum(f.evals .* basis_poly)
     @assert inner_product == enforced_sum
-    sumcheck_prover = SumcheckProverInstance(f, MultiLinearPoly(basis_poly), enforced_sum)    
+    sumcheck_prover, s1 = SumcheckProverInstance(f, MultiLinearPoly(basis_poly), enforced_sum)   
+    absorb!(fs, s1) 
     # now we need to run partial sumcheck for 2^18 -> 2^14, i.e. k[1] rounds of sumcheck
     # then do the gluing that makes sure that 2^18 -> 2^14 step is correct 
     # then run the loop again for 2^14 -> 2^10, i.e. k[2] rounds of sumcheck 
@@ -66,12 +67,14 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
         rs = Vector{U}(undef, config.ks[i])
         for k in 1:config.ks[i]
             ri = get_field(fs, U) 
-            fold!(sumcheck_prover, ri)
+            si = fold!(sumcheck_prover, ri)
+            absorb!(fs, si)
             rs[k] = ri
         end
 
         if i == config.recursive_steps
             # TODO! here we first "send" yr to the verifier before sampling challenges
+            absorb!(fs, sumcheck_prover.f.evals)
 
             rows = size(wtns_prev.mat, 1)
             queries = sort([get_query(fs, rows) for _ in 1:S])
@@ -83,15 +86,16 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
             p_final = FinalLigeroProof(sumcheck_prover.f.evals, opened_rows, mtree_proof)
             proof.final_ligero_proof = p_final
             proof.sumcheck_transcript = SumcheckTranscript(sumcheck_prover.transcript)
-            return proof
+            return finalize(proof)
         end 
 
         wtns_i = ligero_commit(f.evals, config.dims[i][1], config.dims[i][2], config.reed_solomon_codes[i])
         cm_i = RecursiveLigeroCommitment(get_root(wtns_i.tree))
         push!(proof.recursive_commitments, cm_i)
+        absorb!(fs, cm_i.root)
 
         rows = size(wtns_prev.mat, 1)
-        queries = sort([get_query(fs, rows) for _ in 1:S])
+        queries = get_distinct_queries(fs, rows, S)
         alpha = get_field(fs, U)
 
         # TODO! add this to the prover config:
@@ -106,7 +110,9 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
         inner_product = sum(sumcheck_prover.f.evals .* basis_poly)
         @assert inner_product == enforced_sum
 
-        introduce_new!(sumcheck_prover, MultiLinearPoly(basis_poly), enforced_sum)
+        gl_i = introduce_new!(sumcheck_prover, MultiLinearPoly(basis_poly), enforced_sum)
+        absorb!(fs, gl_i)
+
         beta = get_field(fs, U)
         glue!(sumcheck_prover, beta)
 

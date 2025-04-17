@@ -6,8 +6,7 @@ poly = rand(BinaryElem32, 2^24)
 @info "Running with $(Threads.nthreads()) threads"
 @time proof = prover(config, poly)
 
-size_bytes = Base.summarysize(proof)
-size_kb = size_bytes / 1024
-println("Proof size: ", round(size_kb, digits=2), " KB")
+proof_size = sizeof(proof)
+@info "Proof size: $(Base.format_bytes(proof_size))"
 # proof_size = sizeof(proof)
 # @info "Proof size: $(Base.format_bytes(proof_size))"

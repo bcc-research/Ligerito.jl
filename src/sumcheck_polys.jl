@@ -37,7 +37,7 @@ function induce_sumcheck_poly(n::Int, sks_vks::Vector{T}, opened_rows::Vector{Ve
 
         qf = T(query - 1)
         basis_q_evals = evaluate_basis(2^n, sks_vks, qf)
-        @time basis_poly .+= α_pow .* basis_q_evals
+        basis_poly .+= α_pow .* basis_q_evals
 
         α_pow *= α
     end
@@ -68,7 +68,7 @@ function induce_sumcheck_poly_parallel(n::Int, sks_vks::Vector{T}, opened_rows::
         qf = T(query - 1)
         basis_q_evals = evaluate_basis(2^n, sks_vks, qf)
 
-        @time @. partial_basis[tid] += α_pow * basis_q_evals
+        @. partial_basis[tid] += α_pow * basis_q_evals
     end
 
     basis_poly = sum(partial_basis)
