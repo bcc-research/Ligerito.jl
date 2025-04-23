@@ -1,9 +1,10 @@
 using BinaryFields, MultilinearPoly, Sumcheck, BinaryReedSolomon, MerkleTree
 using StatsBase
 
-function thread_map(nt::Int, xs::AbstractVector, f::Function)
+
+function thread_map_convert!(nt::Int, out::AbstractVector{U}, xs::AbstractVector{T}) where {T, U}
     n = length(xs)
-    chunk_size = ceil(Int, n / nt)
+    chunk_size = (n + nt - 1) ÷ nt
 
     Threads.@sync for t in 1:nt
         Threads.@spawn begin
@@ -11,7 +12,7 @@ function thread_map(nt::Int, xs::AbstractVector, f::Function)
             end_idx = min(t * chunk_size, n)
 
             @inbounds for i in start_idx:end_idx
-                f(xs, i)
+                out[i] = convert(U, xs[i])
             end
         end
     end
@@ -36,16 +37,8 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
     partial_evals_1 = [get_field(fs, U) for _ in 1:config.initial_k]
 
     # first time we need to up-cast 
-    # @time begin
-    #     converted = Vector{U}(undef, length(poly))
-    #     Threads.@threads for i in 1:length(poly)
-    #         converted[i] = convert(U, poly[i])
-    #     end
-    # end 
     converted = Vector{U}(undef, length(poly))
-    f = (x, i) -> converted[i] = convert(U, x[i])
-    thread_map(Threads.nthreads(), poly, f)
-    # @time convert_parallel!(converted, poly)
+    @time thread_map_convert!(Threads.nthreads(), converted, poly)
     f = MultiLinearPoly(converted)
 
     # now partially evaluate poly in first k challenges 
