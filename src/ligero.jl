@@ -39,7 +39,7 @@ function ligero_commit(poly::Vector{T}, m::Int, n::Int, rs::BinaryReedSolomon.Re
     mat = encode_cols(poly_mat, rs)
 
     leaves = eachrow(mat)
-    tree = build_merkle_tree(leaves)
+    @time tree = build_merkle_tree_fast(leaves)
 
     return RecursiveLigeroWitness(mat, tree)
 end

@@ -1,6 +1,30 @@
 using BinaryFields, MultilinearPoly, Sumcheck, BinaryReedSolomon, MerkleTree
 using StatsBase
 
+function convert_parallel!(converted::Vector{U}, poly::Vector{T}) where {U, T}
+    n = length(poly)
+    nt = Threads.nthreads()
+    chunk_size = ceil(Int, n / nt)
+
+    Threads.@sync for t in 1:nt
+        Threads.@spawn begin
+            start_idx = (t - 1) * chunk_size + 1
+            end_idx = min(t * chunk_size, n)
+            @inbounds for i in start_idx:end_idx
+                converted[i] = convert(U, poly[i])
+            end
+        end
+    end
+end
+
+function convert_x(x::Vector{T}) where T <: BinaryElem
+    converted = Vector{BinaryElem128}(undef, length(x))
+    Threads.@threads for i in 1:length(x)
+        converted[i] = convert(BinaryElem128, x[i])
+    end
+    return converted    
+end
+
 function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryElem, U <: BinaryElem}
     # initialize fiat shamir: 
     fs = FS(1234)
@@ -20,10 +44,15 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
     partial_evals_1 = [get_field(fs, U) for _ in 1:config.initial_k]
 
     # first time we need to up-cast 
-    converted = Vector{U}(undef, length(poly))
-    Threads.@threads for i in 1:length(poly)
-        converted[i] = convert(U, poly[i])
-    end
+    # @time begin
+    #     converted = Vector{U}(undef, length(poly))
+    #     Threads.@threads for i in 1:length(poly)
+    #         converted[i] = convert(U, poly[i])
+    #     end
+    # end 
+    converted = convert_x(poly)
+    # converted = Vector{U}(undef, length(poly))
+    # @time convert_parallel!(converted, poly)
     f = MultiLinearPoly(converted)
 
     # now partially evaluate poly in first k challenges 
