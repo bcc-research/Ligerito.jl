@@ -38,7 +38,7 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
 
     # first time we need to up-cast 
     converted = Vector{U}(undef, length(poly))
-    @time thread_map_convert!(Threads.nthreads(), converted, poly)
+    thread_map_convert!(Threads.nthreads(), converted, poly)
     f = MultiLinearPoly(converted)
 
     # now partially evaluate poly in first k challenges 
