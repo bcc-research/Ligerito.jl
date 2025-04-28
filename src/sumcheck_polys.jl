@@ -45,30 +45,76 @@ function induce_sumcheck_poly(n::Int, sks_vks::Vector{T}, opened_rows::Vector{Ve
     return (basis_poly, enforced_sum)
 end 
 
+# function induce_sumcheck_poly_parallel(n::Int, sks_vks::Vector{T}, opened_rows::Vector{Vector{T}}, v_challenges::Vector{U}, sorted_queries::Vector{Int}, α::U) where {U <: BinaryElem, T <: BinaryElem}
+#     gr = evaluate_lagrange_basis(v_challenges)
+#     @assert all(length(row) == length(gr) for row in opened_rows)
+#     @assert length(opened_rows) == length(sorted_queries)
+
+#     n_threads = Threads.nthreads()
+#     partial_basis = [zeros(U, 2^n) for _ in 1:n_threads]
+#     partial_sums  = [zero(U) for _ in 1:n_threads]
+
+#     Threads.@threads for i in 1:length(opened_rows)
+#         tid = Threads.threadid()
+#         row = opened_rows[i]
+#         query = sorted_queries[i]
+
+#         dot = sum(row .* gr)
+
+#         α_pow = α^(i - 1)  # Later we cna first run all powers
+
+#         partial_sums[tid] += dot * α_pow
+
+#         qf = T(query - 1)
+#         basis_q_evals = evaluate_basis(2^n, sks_vks, qf)
+
+#         @. partial_basis[tid] += α_pow * basis_q_evals
+#     end
+
+#     basis_poly = sum(partial_basis)
+#     enforced_sum = sum(partial_sums)
+
+#     return basis_poly, enforced_sum
+# end
+
 function induce_sumcheck_poly_parallel(n::Int, sks_vks::Vector{T}, opened_rows::Vector{Vector{T}}, v_challenges::Vector{U}, sorted_queries::Vector{Int}, α::U) where {U <: BinaryElem, T <: BinaryElem}
     gr = evaluate_lagrange_basis(v_challenges)
     @assert all(length(row) == length(gr) for row in opened_rows)
     @assert length(opened_rows) == length(sorted_queries)
 
     n_threads = Threads.nthreads()
-    partial_basis = [zeros(U, 2^n) for _ in 1:n_threads]
-    partial_sums  = [zero(U) for _ in 1:n_threads]
+    partial_basis = Vector{Vector{U}}(undef, n_threads)
+    partial_sums  = Vector{U}(undef, n_threads)
 
-    Threads.@threads for i in 1:length(opened_rows)
-        tid = Threads.threadid()
-        row = opened_rows[i]
-        query = sorted_queries[i]
+    n_rows = length(opened_rows)
+    chunk_size = ceil(Int, n_rows / n_threads)
 
-        dot = sum(row .* gr)
+    Threads.@sync for t in 1:n_threads
+        Threads.@spawn begin
+            local_basis = zeros(U, 2^n)
+            local_sum = zero(U)
 
-        α_pow = α^(i - 1)  # Later we cna first run all powers
+            start_idx = (t-1)*chunk_size + 1
+            end_idx = min(t*chunk_size, n_rows)
 
-        partial_sums[tid] += dot * α_pow
+            @inbounds for i in start_idx:end_idx
+                row = opened_rows[i]
+                query = sorted_queries[i]
 
-        qf = T(query - 1)
-        basis_q_evals = evaluate_basis(2^n, sks_vks, qf)
+                dot = sum(row .* gr)
 
-        @. partial_basis[tid] += α_pow * basis_q_evals
+                α_pow = α^(i - 1)  # (Optional: could precompute for efficiency)
+
+                local_sum += dot * α_pow
+
+                qf = T(query - 1)
+                basis_alpha_q_evals = evaluate_scaled_basis(2^n, sks_vks, qf, α_pow)
+                @. local_basis += basis_alpha_q_evals
+            end
+
+            partial_basis[t] = local_basis
+            partial_sums[t] = local_sum
+        end
     end
 
     basis_poly = sum(partial_basis)

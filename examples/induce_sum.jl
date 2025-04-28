@@ -50,7 +50,7 @@ alpha = rand(BinaryElem16)
 opened_rows = [vec(mat[q, :]) for q in queries]
 
 # finally induce the sumcheck polynomial and enforced sum
-basis_poly, enforced_sum = induce_sumcheck_poly_parallel(log_basis_len, sks_vks, opened_rows, rs, queries, alpha)
+basis_poly, enforced_sum = induce_sumcheck_poly(log_basis_len, sks_vks, opened_rows, rs, queries, alpha)
 
 # evaluate f partially in those challenges, this is what hones prover commits to
 
