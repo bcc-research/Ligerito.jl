@@ -94,8 +94,8 @@ end
 Base.sizeof(p::FinalizedLigeritoProof{T, U}) where {T, U <: BinaryElem} =
     sizeof(p.initial_ligero_cm) +
     sizeof(p.initial_ligero_proof) +
-    sum(sizeof, p.recursive_commitments) +
-    sum(sizeof, p.recursive_proofs) +
+    sum(sizeof.(p.recursive_commitments)) +
+    sum(sizeof.(p.recursive_proofs)) +
     sizeof(p.final_ligero_proof) +
     sizeof(p.sumcheck_transcript)
 
