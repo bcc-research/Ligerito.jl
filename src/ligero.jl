@@ -6,40 +6,61 @@ using Base.Threads, ThreadTools
 
 export encode_poly, ligero_commit
 
+function poly2mat(poly::Vector{T}, m::Int, n::Int, inv_rate::Int) where {T <: BinaryElem}
+    m_target = m * inv_rate
+    mat = zeros(T, m_target, n)
 
-# XXX: Make this allocate way less (a lot of GC pressure)
-function encode_cols(poly_mat, rs; parallel=true)
-    if parallel
-        encoded_columns = tmap(c -> encode_non_systematic!(rs, c), eachcol(poly_mat))
-    else
-        encoded_columns = map(c -> encode_non_systematic!(rs, c), eachcol(poly_mat))
+    nt = Threads.nthreads()
+    chunk_size = ceil(Int, n / nt)
+
+    Threads.@sync for t in 1:nt
+        Threads.@spawn begin
+            start_col = (t-1)*chunk_size + 1
+            end_col = min(t*chunk_size, n)
+
+            @inbounds for j in start_col:end_col
+                for i in 1:m
+                    mat[i, j] = poly[(j-1)*m + i]
+                end
+            end
+        end
     end
-    return hcat(encoded_columns...)
+
+    return mat
 end
 
-# function encode_cols(poly_mat, rs; parallel=true)
-#     n_cols = size(poly_mat, 2)
-#     out = Matrix{eltype(poly_mat)}(undef, block_length(rs), n_cols)
+function encode_cols!(poly_mat, rs; parallel=true)
+    n = size(poly_mat, 2)
 
-#     if parallel
-#         Threads.@threads for j in 1:n_cols
-#             out[:, j] = encode_non_systematic!(rs, view(poly_mat, :, j))
-#         end
-#     else
-#         for j in 1:n_cols
-#             out[:, j] = encode_non_systematic!(rs, view(poly_mat, :, j))
-#         end
-#     end
+    if parallel
+        nt = Threads.nthreads()
+        chunk_size = ceil(Int, n / nt)
 
-#     return out
-# end
+        Threads.@sync for t in 1:nt
+            Threads.@spawn begin
+                start_col = (t-1)*chunk_size + 1
+                end_col = min(t*chunk_size, n)
+
+                @inbounds for j in start_col:end_col
+                    encode_non_systematic!(rs, @view poly_mat[:, j])
+                end
+            end
+        end
+    else
+        @inbounds for j in 1:n
+            encode_non_systematic!(rs, @view poly_mat[:, j])
+        end
+    end
+
+    return poly_mat
+end
 
 function ligero_commit(poly::Vector{T}, m::Int, n::Int, rs::BinaryReedSolomon.ReedSolomonEncoding{T}) where T <: BinaryElem
-    poly_mat = reshape(poly, m, n)
-    mat = encode_cols(poly_mat, rs)
+    poly_mat = poly2mat(poly, m, n, 4)
+    encode_cols!(poly_mat, rs)
 
-    leaves = eachrow(mat)
+    leaves = eachrow(poly_mat)
     tree = build_merkle_tree_fast(leaves)
 
-    return RecursiveLigeroWitness(mat, tree)
+    return RecursiveLigeroWitness(poly_mat, tree)
 end
