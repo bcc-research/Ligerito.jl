@@ -1,8 +1,8 @@
 using BinaryFields, StatsBase
 using Ligerito
 
-config = Ligerito.hardcoded_config_24(BinaryElem32, BinaryElem128)
-poly = rand(BinaryElem32, 2^24)
+config = Ligerito.hardcoded_config_28(BinaryElem32, BinaryElem128)
+poly = rand(BinaryElem32, 2^28)
 
 @info "Running with $(Threads.nthreads()) threads"
 @time proof = prover(config, poly)

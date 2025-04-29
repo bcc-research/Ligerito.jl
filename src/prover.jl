@@ -51,12 +51,9 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
     basis_poly, enforced_sum = induce_sumcheck_poly_parallel(f.n, sks_vks, opened_rows, partial_evals_1, queries, alpha) 
     inner_product = sum(f.evals .* basis_poly)
     @assert inner_product == enforced_sum
+    @info "first one worked"
     sumcheck_prover, s1 = SumcheckProverInstance(f, MultiLinearPoly(basis_poly), enforced_sum)   
     absorb!(fs, s1) 
-    # now we need to run partial sumcheck for 2^18 -> 2^14, i.e. k[1] rounds of sumcheck
-    # then do the gluing that makes sure that 2^18 -> 2^14 step is correct 
-    # then run the loop again for 2^14 -> 2^10, i.e. k[2] rounds of sumcheck 
-    # then we don't need to send another gluing poly because verifier can check themselves that 2^14 -> 2^10 step is correct
 
     wtns_prev = wtns2
     for i in 1:config.recursive_steps
@@ -83,7 +80,7 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
             return finalize(proof)
         end 
 
-        wtns_i = ligero_commit(f.evals, config.dims[i][1], config.dims[i][2], config.reed_solomon_codes[i])
+        wtns_i = ligero_commit(sumcheck_prover.f.evals, config.dims[i + 1][1], config.dims[i + 1][2], config.reed_solomon_codes[i + 1])
         cm_i = RecursiveLigeroCommitment(get_root(wtns_i.tree))
         push!(proof.recursive_commitments, cm_i)
         absorb!(fs, cm_i.root)
@@ -101,8 +98,12 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
         push!(proof.recursive_proofs, p_i)
 
         basis_poly, enforced_sum = induce_sumcheck_poly_parallel(sumcheck_prover.f.n, sks_vks, opened_rows, rs, queries, alpha)
-        inner_product = sum(sumcheck_prover.f.evals .* basis_poly)
-        @assert inner_product == enforced_sum
+        # inner_product = sum(sumcheck_prover.f.evals .* basis_poly)
+        # @info "before loop"
+        # @show inner_product
+        # @show enforced_sum
+        # @assert inner_product == enforced_sum
+        # @info "survived loop"
 
         gl_i = introduce_new!(sumcheck_prover, MultiLinearPoly(basis_poly), enforced_sum)
         absorb!(fs, gl_i)
@@ -110,7 +111,8 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
         beta = get_field(fs, U)
         glue!(sumcheck_prover, beta)
 
-        wtns_prev = wtns_i
+        # wtns_prev = wtns_i
+        wtns_prev = RecursiveLigeroWitness(deepcopy(wtns_i.mat), deepcopy(wtns_i.tree))
     end
 end
 

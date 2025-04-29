@@ -84,6 +84,34 @@ function hardcoded_config_24(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
     return ProverConfig(recursive_steps, initial_dims, dims, initial_k, ks, initial_reed_solomon, reed_solomon_codes)
 end
 
+# function hardcoded_config_24(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
+#     # hardcode optimal dimensions for N = 2^24
+#     dims = Vector{Tuple{Int, Int}}(undef, 3)
+#     initial_dims = (2^18, 2^6) # this is 2^24 - sample 6 vars to reduce to 2^18
+#     dims[1] = (2^16, 2^2) # write 2^18 like this - sample 2 vars to reduce to 2^16
+#     dims[2] = (2^14, 2^2) # write 2^16 like this - sample 2 vars to reduce to 2^14
+#     dims[3] = (2^10, 2^4) # then do 4 more vars to reduce it to 2^10 when we just run ligero 
+
+#     # hardcode amount of random variables we do per recursive step 
+#     ks = Vector{Int}(undef, 3)
+#     initial_k = 6 
+#     ks[1] = 2
+#     ks[2] = 2
+#     ks[3] = 4
+
+#     # prepare reed solomon codes 
+#     # 4 is hardcoded inv_rate for now
+#     initial_reed_solomon = reed_solomon(T, initial_dims[1], initial_dims[1] * 4)
+#     reed_solomon_codes = Vector{BinaryReedSolomon.ReedSolomonEncoding{U}}(undef, 3)
+#     for i in 1:3
+#         reed_solomon_codes[i] = reed_solomon(U, dims[i][1], dims[i][1] * 4)
+#     end
+
+#     recursive_steps = 3
+
+#     return ProverConfig(recursive_steps, initial_dims, dims, initial_k, ks, initial_reed_solomon, reed_solomon_codes)
+# end
+
 function hardcoded_config_28(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
     # hardcode optimal dimensions for N = 2^28
     # [64.0, 8.0, 8.0, 8.0, 8.0, 1024.0]
