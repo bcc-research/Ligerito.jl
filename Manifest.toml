@@ -15,7 +15,9 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 version = "1.11.0"
 
 [[deps.BCCSHA]]
-path = "../BCCSHA"
+git-tree-sha1 = "b9c08ef17417bacdaa5c0c9d81f6ae1580e4dc85"
+repo-rev = "main"
+repo-url = "https://github.com/bcc-research/inplace-sha.git"
 uuid = "aa8e919c-243c-51af-8825-aaa63cd721ce"
 version = "0.7.0"
 
