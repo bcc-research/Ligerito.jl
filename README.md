@@ -7,10 +7,10 @@ Novakovic and Guillermo Angeris.
 
 # How to run this code
 1. Clone the repository
-2. Launch a Julia REPL in the cloned directory
+2. Launch a Julia REPL in the cloned directory (ideally launch it with multiple threads, via `julia --threads=8`)
 3. Activate the environment (e.g., `using Pkg; Pkg.activate(".")`)
 4. Instantiate all dependencies (via `Pkg.instantiate()`)
-5. Run the example: (via `include("./examples/prove_verify.jl")`)
+5. Run the example: (via `include("./examples/prove_verify.jl")`, remember run it twice to ensure the code is compiled before benchmarking)
 
 We provide multiple possible configurations. For more, see the
 `examples/prove.jl` and `src/configs.jl` files.
