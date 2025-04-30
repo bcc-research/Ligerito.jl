@@ -1,7 +1,6 @@
 name = "Ligerito"
 
 [deps]
-BCCSHA = "aa8e919c-243c-51af-8825-aaa63cd721ce"
 BinaryFields = "0fee9d7f-8397-4f0d-9ec6-117db1666467"
 BinaryReedSolomon = "8a283c49-c6d0-46c5-bbc1-5b2a51f34960"
 MerkleTree = "225b011c-e439-4471-b39b-04a9a0fe32f0"
