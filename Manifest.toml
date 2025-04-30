@@ -25,13 +25,19 @@ version = "1.11.0"
 
 [[deps.BinaryFields]]
 deps = ["Random", "SIMD"]
-path = "../ligerito-impl/BinaryFields"
+git-tree-sha1 = "018699e3d2d8f6b63ab50c9dc6cf76e18c008bb0"
+repo-rev = "main"
+repo-subdir = "BinaryFields"
+repo-url = "https://github.com/bcc-research/ligerito-impl.git"
 uuid = "0fee9d7f-8397-4f0d-9ec6-117db1666467"
 version = "0.1.0"
 
 [[deps.BinaryReedSolomon]]
 deps = ["BinaryFields"]
-path = "../ligerito-impl/BinaryReedSolomon"
+git-tree-sha1 = "055c4107c715829d1a624455922a48c5051a0e6f"
+repo-rev = "main"
+repo-subdir = "BinaryReedSolomon"
+repo-url = "https://github.com/bcc-research/ligerito-impl.git"
 uuid = "8a283c49-c6d0-46c5-bbc1-5b2a51f34960"
 version = "0.1.0"
 
@@ -134,7 +140,10 @@ version = "2.28.6+0"
 
 [[deps.MerkleTree]]
 deps = ["BCCSHA", "SHA"]
-path = "../ligerito-impl/MerkleTree"
+git-tree-sha1 = "d4576a57d863f11b7474b1ebe06fbc0ede4013c4"
+repo-rev = "main"
+repo-subdir = "MerkleTree"
+repo-url = "https://github.com/bcc-research/ligerito-impl.git"
 uuid = "225b011c-e439-4471-b39b-04a9a0fe32f0"
 version = "0.1.0"
 
@@ -146,7 +155,10 @@ version = "1.2.0"
 
 [[deps.MultilinearPoly]]
 deps = ["BinaryFields"]
-path = "../ligerito-impl/MultilinearPoly"
+git-tree-sha1 = "f9cc7aca12afb14ca3de79ab2b2c7e49096bbbc0"
+repo-rev = "main"
+repo-subdir = "MultilinearPoly"
+repo-url = "https://github.com/bcc-research/ligerito-impl.git"
 uuid = "738c1076-b784-4255-a602-5a9e144980bc"
 version = "0.1.0"
 
@@ -245,7 +257,10 @@ version = "7.7.0+0"
 
 [[deps.Sumcheck]]
 deps = ["BinaryFields", "MultilinearPoly"]
-path = "../ligerito-impl/Sumcheck"
+git-tree-sha1 = "fb200ca8d80f824fd48d5d5bc5c565bbd78708b4"
+repo-rev = "main"
+repo-subdir = "Sumcheck"
+repo-url = "https://github.com/bcc-research/ligerito-impl.git"
 uuid = "84d44fc1-a790-4315-927d-a798c59cc72a"
 version = "0.1.0"
 
