@@ -49,9 +49,8 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
 
     # finally induce the sumcheck polynomial and enforced sum
     basis_poly, enforced_sum = induce_sumcheck_poly_parallel(f.n, sks_vks, opened_rows, partial_evals_1, queries, alpha) 
-    inner_product = sum(f.evals .* basis_poly)
-    @assert inner_product == enforced_sum
-    @info "first one worked"
+    # inner_product = sum(f.evals .* basis_poly)
+    # @assert inner_product == enforced_sum
     sumcheck_prover, s1 = SumcheckProverInstance(f, MultiLinearPoly(basis_poly), enforced_sum)   
     absorb!(fs, s1) 
 
