@@ -57,6 +57,7 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
             absorb!(fs, sumcheck_prover.f.evals)
 
             rows = size(wtns_prev.mat, 1)
+            # @show rows
             queries = get_distinct_queries(fs, rows, S)
             opened_rows = [vec(wtns_prev.mat[q, :]) for q in queries]
             mtree_proof = MerkleTree.prove(wtns_prev.tree, queries)

@@ -21,6 +21,20 @@ function hardcoded_config_20(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
     return ProverConfig(recursive_steps, initial_dims, dims, initial_k, ks, initial_reed_solomon, reed_solomon_codes)
 end
 
+function hardcoded_config_20_verifier()
+    recursive_steps = 1
+
+    log_rs_dims = Vector{Int}(undef, recursive_steps)
+    initial_dim = 14
+    log_rs_dims[1] = 10
+
+    ks = Vector{Int}(undef, recursive_steps)
+    initial_k = 6 
+    ks[1] = 4 
+
+    return VerifierConfig(recursive_steps, initial_dim, log_rs_dims, initial_k, ks)
+end
+
 function hardcoded_config_24(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
     recursive_steps = 2
     inv_rate = 4
@@ -42,6 +56,22 @@ function hardcoded_config_24(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
     end
 
     return ProverConfig(recursive_steps, initial_dims, dims, initial_k, ks, initial_reed_solomon, reed_solomon_codes)
+end
+
+function hardcoded_config_24_verifier()
+    recursive_steps = 2
+
+    log_rs_dims = Vector{Int}(undef, recursive_steps)
+    initial_dim = 18
+    log_rs_dims[1] = 14
+    log_rs_dims[2] = 10
+
+    ks = Vector{Int}(undef, recursive_steps)
+    initial_k = 6 
+    ks[1] = 4 
+    ks[2] = 4 
+
+    return VerifierConfig(recursive_steps, initial_dim, log_rs_dims, initial_k, ks)
 end
 
 function hardcoded_config_28(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
@@ -71,6 +101,26 @@ function hardcoded_config_28(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
     return ProverConfig(recursive_steps, initial_dims, dims, initial_k, ks, initial_reed_solomon, reed_solomon_codes)
 end
 
+function hardcoded_config_28_verifier()
+    recursive_steps = 4
+
+    log_rs_dims = Vector{Int}(undef, recursive_steps)
+    initial_dim = 22
+    log_rs_dims[1] = 19
+    log_rs_dims[2] = 16
+    log_rs_dims[3] = 13
+    log_rs_dims[4] = 10
+
+    ks = Vector{Int}(undef, recursive_steps)
+    initial_k = 6 
+    ks[1] = 3 
+    ks[2] = 3 
+    ks[3] = 3 
+    ks[4] = 3
+
+    return VerifierConfig(recursive_steps, initial_dim, log_rs_dims, initial_k, ks)
+end
+
 function hardcoded_config_30(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
     recursive_steps = 3 
     inv_rate = 4
@@ -94,4 +144,22 @@ function hardcoded_config_30(::Type{T}, ::Type{U}) where {T, U <: BinaryElem}
     end
 
     return ProverConfig(recursive_steps, initial_dims, dims, initial_k, ks, initial_reed_solomon, reed_solomon_codes)
+end
+
+function hardcoded_config_30_verifier()
+    recursive_steps = 3
+
+    log_rs_dims = Vector{Int}(undef, recursive_steps)
+    initial_dim = 23
+    log_rs_dims[1] = 19
+    log_rs_dims[2] = 15
+    log_rs_dims[3] = 11
+
+    ks = Vector{Int}(undef, recursive_steps)
+    initial_k = 7
+    ks[1] = 4
+    ks[2] = 4 
+    ks[3] = 4 
+
+    return VerifierConfig(recursive_steps, initial_dim, log_rs_dims, initial_k, ks)
 end

@@ -2,31 +2,34 @@ using BinaryFields
 
 export verifier
 
-function verifier(proof::FinalizedLigeritoProof{T, U}) where {T <: BinaryElem, U <: BinaryElem}
+#TODO: Optimize verifier with time and allocations!
+
+function verifier(config::VerifierConfig, proof::FinalizedLigeritoProof{T, U}) where {T <: BinaryElem, U <: BinaryElem}
     fs = FS(1234)
     S = 148
+    log_inv_rate = 2
 
     absorb!(fs, proof.initial_ligero_cm.root)
-    partial_evals_1 = [get_field(fs, U) for _ in 1:6]
+    partial_evals_0 = [get_field(fs, U) for _ in 1:config.initial_k]
 
     absorb!(fs, proof.recursive_commitments[1].root)
 
-    queries = get_distinct_queries(fs, 2^20, S)
-    # given queries we can now verify the merkle tree proof 
-    res = MerkleTree.verify(proof.initial_ligero_cm.root, proof.initial_ligero_proof.merkle_proof; depth = 20, leaves = proof.initial_ligero_proof.opened_rows, leaf_indices = queries)
+    depth = config.initial_dim + log_inv_rate
+    queries = get_distinct_queries(fs, 2^depth, S)
+    res = MerkleTree.verify(proof.initial_ligero_cm.root, proof.initial_ligero_proof.merkle_proof; depth, leaves = proof.initial_ligero_proof.opened_rows, leaf_indices = queries)
     @assert res == true
 
     alpha = get_field(fs, U)
 
     # TODO! add this to the verifier config: 
-    sks_vks = eval_sk_at_vks(2^18, T)
-    basis_poly, enforced_sum = induce_sumcheck_poly_parallel(18, sks_vks, proof.initial_ligero_proof.opened_rows, partial_evals_1, queries, alpha) 
+    sks_vks = eval_sk_at_vks(2^config.initial_dim, T)
+    basis_poly, enforced_sum = induce_sumcheck_poly_parallel(config.initial_dim, sks_vks, proof.initial_ligero_proof.opened_rows, partial_evals_0, queries, alpha) 
 
     sumcheck_verifier, g1 = SumcheckVerifierInstance(MultiLinearPoly(basis_poly), enforced_sum, proof.sumcheck_transcript.tr)
     absorb!(fs, g1)
-    for i in 1:2
-        rs = Vector{U}(undef, 4)
-        for k in 1:4
+    for i in 1:config.recursive_steps
+        rs = Vector{U}(undef, config.ks[i])
+        for k in 1:config.ks[i]
             ri = get_field(fs, U) 
             si = fold!(sumcheck_verifier, ri)
             absorb!(fs, si)
@@ -34,13 +37,15 @@ function verifier(proof::FinalizedLigeritoProof{T, U}) where {T <: BinaryElem, U
         end
 
         root = proof.recursive_commitments[i].root
-
-        if i == 2
+        if i == config.recursive_steps
             absorb!(fs, proof.final_ligero_proof.yr)
 
-            queries = get_distinct_queries(fs, 2^16, S)
-            res = MerkleTree.verify(root, proof.final_ligero_proof.merkle_proof; depth = 16, leaves = proof.final_ligero_proof.opened_rows, leaf_indices = queries)
+            depth = config.log_dims[i] + log_inv_rate
+            queries = get_distinct_queries(fs, 2^depth, S)
+            res = MerkleTree.verify(root, proof.final_ligero_proof.merkle_proof; depth, leaves = proof.final_ligero_proof.opened_rows, leaf_indices = queries)
             @assert res == true
+
+            verify_ligero(queries, proof.final_ligero_proof.opened_rows, proof.final_ligero_proof.yr, rs)
 
             # take last random element
             final_r = get_field(fs, U)
@@ -51,18 +56,19 @@ function verifier(proof::FinalizedLigeritoProof{T, U}) where {T <: BinaryElem, U
             return ok
         end 
 
-        liger_proof = proof.recursive_proofs[i]
         absorb!(fs, proof.recursive_commitments[i + 1].root)
-        queries = get_distinct_queries(fs, 2^16, S)
-        res = MerkleTree.verify(root, liger_proof.merkle_proof; depth = 16, leaves = liger_proof.opened_rows, leaf_indices = queries)
-        @assert res == true
 
+        depth = config.log_dims[i] + log_inv_rate
+        liger_proof = proof.recursive_proofs[i]
+        queries = get_distinct_queries(fs, 2^depth, S)
+        res = MerkleTree.verify(root, liger_proof.merkle_proof; depth, leaves = liger_proof.opened_rows, leaf_indices = queries)
+        @assert res == true
 
         alpha = get_field(fs, U)
 
         # TODO! add this to the verifier config: 
-        sks_vks = eval_sk_at_vks(2^14, U)
-        basis_poly, enforced_sum = induce_sumcheck_poly_parallel(14, sks_vks, liger_proof.opened_rows, rs, queries, alpha)
+        sks_vks = eval_sk_at_vks(2^config.log_dims[i], U)
+        basis_poly, enforced_sum = induce_sumcheck_poly_parallel(config.log_dims[i], sks_vks, liger_proof.opened_rows, rs, queries, alpha)
 
         gl_i = introduce_new!(sumcheck_verifier, MultiLinearPoly(basis_poly), enforced_sum)
         absorb!(fs, gl_i)

@@ -11,6 +11,14 @@ struct ProverConfig{T, U <: BinaryElem}
     reed_solomon_codes::Vector{BinaryReedSolomon.ReedSolomonEncoding{U}}
 end
 
+struct VerifierConfig
+    recursive_steps::Int
+    initial_dim::Int
+    log_dims::Vector{Int}
+    initial_k::Int
+    ks::Vector{Int}
+end
+
 struct RecursiveLigeroWitness{T<:BinaryElem}
     mat::Matrix{T}
     tree::CompleteMerkleTree
@@ -99,5 +107,5 @@ Base.sizeof(p::FinalizedLigeritoProof{T, U}) where {T, U <: BinaryElem} =
     sizeof(p.final_ligero_proof) +
     sizeof(p.sumcheck_transcript)
 
-export ProverSetup, RecursiveLigeroCommitment, RecursiveLigeroProof, LigeritoProof, SumcheckTranscript, FinalLigeroProof
+export VerifierConfig, ProverConfig, RecursiveLigeroCommitment, RecursiveLigeroProof, LigeritoProof, SumcheckTranscript, FinalLigeroProof
 export finalize, FinalizedLigeritoProof
