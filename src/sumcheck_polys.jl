@@ -41,6 +41,7 @@ function induce_sumcheck_poly_parallel(n::Int, sks_vks::Vector{T}, opened_rows::
 
                 α_pow = alpha_pows[i]
 
+                #NOTE: This is not needed on a prover side, but it's here for sanity checks
                 partial_sums[t] += dot * α_pow
 
                 qf = T(query - 1)
