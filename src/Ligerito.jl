@@ -8,6 +8,4 @@ include("./ligero.jl")
 include("./prover.jl")
 include("./verifier.jl")
 
-
-
 end 

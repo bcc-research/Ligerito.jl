@@ -2,22 +2,6 @@ using SHA, Random, Sumcheck
 
 export FS, get_field, get_query, absorb!
 
-# struct FS
-#     rng::MersenneTwister 
-# end 
-
-# function FS(seed::Int)
-#     rng = MersenneTwister(seed)
-#     return FS(rng)
-# end
-
-# function get_field(fs::FS, ::Type{T}) where T <: BinaryElem
-#     return rand(fs.rng, T)
-# end
-
-# function get_query(fs::FS, N::Int)
-#     return rand(fs.rng, 1:N)
-# end
 
 # the most basic implementation of Fiat-Shamir
 mutable struct FS

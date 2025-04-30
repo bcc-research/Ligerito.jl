@@ -1,60 +1,49 @@
 using BinaryFields, MultilinearPoly, Sumcheck, BinaryReedSolomon, MerkleTree
 using StatsBase
 
+# S is hardcoded to 148 for now 
+# Rate is hardcoded to 1/4 for now
 function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryElem, U <: BinaryElem}
     # initialize fiat shamir: 
+    # TODO! hash public data into it 
     fs = FS(1234)
 
     # for now just hc this too 
     S = 148
 
-    # initialize proof: 
     proof = LigeritoProof{T, U}()
 
-    # here we commit to 2^24 via matrix of 2^18 * 2^6
-    wtns1 = ligero_commit(poly, config.initial_dims[1], config.initial_dims[2], config.initial_reed_solomon)
-    cm1 = RecursiveLigeroCommitment(get_root(wtns1.tree))
-    proof.initial_ligero_cm = cm1
-    absorb!(fs, cm1.root)
-    # then we get first k partial evals at once, before we start the sumcheck
-    partial_evals_1 = [get_field(fs, U) for _ in 1:config.initial_k]
+    wtns_0 = ligero_commit(poly, config.initial_dims[1], config.initial_dims[2], config.initial_reed_solomon)
+    cm_0 = RecursiveLigeroCommitment(get_root(wtns_0.tree))
+    proof.initial_ligero_cm = cm_0
+    absorb!(fs, cm_0.root)
 
-    # first time we need to up-cast 
-    # converted = Vector{U}(undef, length(poly))
-    # thread_map_convert!(Threads.nthreads(), converted, poly)
+    partial_evals_0 = [get_field(fs, U) for _ in 1:config.initial_k]
+
     f = MultiLinearPoly(poly)
+    f = partial_eval(f, partial_evals_0)
 
-    # now partially evaluate poly in first k challenges 
-    # we don't need to store previous values of f!
-    f = partial_eval(f, partial_evals_1) # f is now 2^18
-
-    # now instead of sending it to the verifier let's commit to it again and induce a sumcheck instance
-    # this takes 2^18 poly and makes it 2^14 * 2^4 end encodes it
-    wtns2 = ligero_commit(f.evals, config.dims[1][1], config.dims[1][2], config.reed_solomon_codes[1])
-    cm2 = RecursiveLigeroCommitment(get_root(wtns2.tree))
-    push!(proof.recursive_commitments, cm2)
-    absorb!(fs, cm2.root)
+    wtns_1 = ligero_commit(f.evals, config.dims[1][1], config.dims[1][2], config.reed_solomon_codes[1])
+    cm_1 = RecursiveLigeroCommitment(get_root(wtns_1.tree))
+    push!(proof.recursive_commitments, cm_1)
+    absorb!(fs, cm_1.root)
     
-    # after committing to this poly we need to induce a sumcheck, so sample random rows and separation challenge 
-    rows = size(wtns1.mat, 1)
+    rows = size(wtns_0.mat, 1)
     queries = get_distinct_queries(fs, rows, S)
     alpha = get_field(fs, U)
 
     # TODO! add this to the prover config: 
     sks_vks = eval_sk_at_vks(2^f.n, T)
 
-    opened_rows = [vec(wtns1.mat[q, :]) for q in queries]
-    mtree_proof = MerkleTree.prove(wtns1.tree, queries)
+    opened_rows = [vec(wtns_0.mat[q, :]) for q in queries]
+    mtree_proof = MerkleTree.prove(wtns_0.tree, queries)
     proof.initial_ligero_proof = RecursiveLigeroProof(opened_rows, mtree_proof)
 
-    # finally induce the sumcheck polynomial and enforced sum
-    basis_poly, enforced_sum = induce_sumcheck_poly_parallel(f.n, sks_vks, opened_rows, partial_evals_1, queries, alpha) 
-    # inner_product = sum(f.evals .* basis_poly)
-    # @assert inner_product == enforced_sum
+    basis_poly, enforced_sum = induce_sumcheck_poly_parallel(f.n, sks_vks, opened_rows, partial_evals_0, queries, alpha) 
     sumcheck_prover, s1 = SumcheckProverInstance(f, MultiLinearPoly(basis_poly), enforced_sum)   
     absorb!(fs, s1) 
 
-    wtns_prev = wtns2
+    wtns_prev = wtns_1
     for i in 1:config.recursive_steps
         rs = Vector{U}(undef, config.ks[i])
         for k in 1:config.ks[i]
@@ -72,17 +61,16 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
             opened_rows = [vec(wtns_prev.mat[q, :]) for q in queries]
             mtree_proof = MerkleTree.prove(wtns_prev.tree, queries)
 
-
             p_final = FinalLigeroProof(sumcheck_prover.f.evals, opened_rows, mtree_proof)
             proof.final_ligero_proof = p_final
             proof.sumcheck_transcript = SumcheckTranscript(sumcheck_prover.transcript)
             return finalize(proof)
         end 
 
-        wtns_i = ligero_commit(sumcheck_prover.f.evals, config.dims[i + 1][1], config.dims[i + 1][2], config.reed_solomon_codes[i + 1])
-        cm_i = RecursiveLigeroCommitment(get_root(wtns_i.tree))
-        push!(proof.recursive_commitments, cm_i)
-        absorb!(fs, cm_i.root)
+        wtns_next = ligero_commit(sumcheck_prover.f.evals, config.dims[i + 1][1], config.dims[i + 1][2], config.reed_solomon_codes[i + 1])
+        cm_next = RecursiveLigeroCommitment(get_root(wtns_next.tree))
+        push!(proof.recursive_commitments, cm_next)
+        absorb!(fs, cm_next.root)
 
         rows = size(wtns_prev.mat, 1)
         queries = get_distinct_queries(fs, rows, S)
@@ -97,12 +85,6 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
         push!(proof.recursive_proofs, p_i)
 
         basis_poly, enforced_sum = induce_sumcheck_poly_parallel(sumcheck_prover.f.n, sks_vks, opened_rows, rs, queries, alpha)
-        # inner_product = sum(sumcheck_prover.f.evals .* basis_poly)
-        # @info "before loop"
-        # @show inner_product
-        # @show enforced_sum
-        # @assert inner_product == enforced_sum
-        # @info "survived loop"
 
         gl_i = introduce_new!(sumcheck_prover, MultiLinearPoly(basis_poly), enforced_sum)
         absorb!(fs, gl_i)
@@ -110,8 +92,7 @@ function prover(config::ProverConfig{T, U}, poly::Vector{T}) where {T <: BinaryE
         beta = get_field(fs, U)
         glue!(sumcheck_prover, beta)
 
-        # wtns_prev = wtns_i
-        wtns_prev = RecursiveLigeroWitness(deepcopy(wtns_i.mat), deepcopy(wtns_i.tree))
+        wtns_prev = wtns_next
     end
 end
 
