@@ -1,6 +1,6 @@
 # Ligerito
 This is an experimental implementation of Ligerito polynomial commitment scheme
-described in [this paper](angeris.github.io/papers/ligerito.pdf) by Andrija
+described in [this paper](https://angeris.github.io/papers/ligerito.pdf) by Andrija
 Novakovic and Guillermo Angeris.
 
 **The code is not audited and is meant for research purposes only.**
