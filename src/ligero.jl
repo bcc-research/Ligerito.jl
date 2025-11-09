@@ -68,33 +68,22 @@ end
 function verify_ligero(queries, opened_rows, yr::Vector{T}, challenges::Vector{U}) where {T, U <: BinaryElem}
     gr = evaluate_lagrange_basis(challenges)
     n = Int(log2(length(yr)))
+    # this can be precomputed
     sks_vks = eval_sk_at_vks(2^n, U)
+    sks_x = Vector{T}(undef, length(sks_vks))  
+    basis = zeros(U, 2^n)
 
-    n_threads = Threads.nthreads()
-    n_rows = length(opened_rows)
-    chunk_size = ceil(Int, n_rows / n_threads)
+    for i in eachindex(opened_rows)
+        row = opened_rows[i]
+        query = queries[i]
 
-    Threads.@sync for t in 1:n_threads
-        Threads.@spawn begin
-            start_idx = (t-1)*chunk_size + 1
-            end_idx = min(t*chunk_size, n_rows)
+        dot = row' * gr
 
-            local_basis = zeros(U, 2^n)
-            local_sks_x = Vector{T}(undef, length(sks_vks))  
+        qf = T(query - 1)
 
-            @inbounds for i in start_idx:end_idx
-                row = opened_rows[i]
-                query = queries[i]
+        evaluate_scaled_basis_inplace!(sks_x, basis, sks_vks, qf, T(1))
+        e = yr' * basis
 
-                dot = row' * gr
-
-                qf = T(query - 1)
-                evaluate_scaled_basis_inplace!(local_sks_x, local_basis, sks_vks, qf, T(1))
-                e = yr' * local_basis
-
-                @assert e == dot "Verification failed at index $i: expected $dot, got $e"
-            end
-        end
+        @assert e == dot "Verification failed at index $i: expected $dot, got $e"
     end
-
 end
