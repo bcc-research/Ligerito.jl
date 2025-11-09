@@ -18,7 +18,7 @@ proof_size = sizeof(proof)
 @info "Proof size: $(Base.format_bytes(proof_size))"
 
 # We provide multiple 'hardcoded' configurations such as
-# hardcoded_config_20_verifier()
+# hardcoded_config_4_verifier()
 # hardcoded_config_24_verifier()
 # hardcoded_config_28_verifier()
 # hardcoded_config_30_verifier()

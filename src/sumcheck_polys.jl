@@ -57,4 +57,26 @@ function induce_sumcheck_poly_parallel(n::Int, sks_vks::Vector{T}, opened_rows::
     return basis_poly, enforced_sum
 end
 
-export induce_sumcheck_poly, evaluate_lagrange_basis, induce_sumcheck_poly_parallel
+function register_new_fold!(verifier::SumcheckVerifier{U}, n::Int, sks_vks::Vector{T}, sorted_queries::Vector{Int}, α::U, opened_rows::Vector{Vector{T}}, v_challenges::Vector{U}) where {U <: BinaryElem, T <: BinaryElem}
+    gr = evaluate_lagrange_basis(v_challenges)
+    @assert all(length(row) == length(gr) for row in opened_rows)
+    @assert length(opened_rows) == length(sorted_queries)
+
+    n_rows = length(opened_rows)
+    alpha_pows = precompute_alpha_powers(α, n_rows)
+    enforced_sum = zero(U) 
+    
+    for i in 1:length(opened_rows)
+        row = opened_rows[i]
+
+        dot = row' * gr
+        enforced_sum += dot * alpha_pows[i]
+    end
+
+
+    queries = [T(query - 1) for query in sorted_queries]
+    new_fold!(verifier, n, queries, sks_vks, α)
+    return enforced_sum
+end
+
+export induce_sumcheck_poly, evaluate_lagrange_basis, induce_sumcheck_poly_parallel, register_first_fold!

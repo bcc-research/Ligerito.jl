@@ -1,4 +1,4 @@
-using BinaryFields
+using BinaryFields, Sumcheck
 
 export verifier
 
@@ -23,10 +23,17 @@ function verifier(config::VerifierConfig, proof::FinalizedLigeritoProof{T, U}) w
 
     # TODO! add this to the verifier config: 
     sks_vks = eval_sk_at_vks(2^config.initial_dim, T)
-    basis_poly, enforced_sum = induce_sumcheck_poly_parallel(config.initial_dim, sks_vks, proof.initial_ligero_proof.opened_rows, partial_evals_0, queries, alpha) 
 
-    sumcheck_verifier, g1 = SumcheckVerifierInstance(MultiLinearPoly(basis_poly), enforced_sum, proof.sumcheck_transcript.tr)
+    # initialize a sumcheck verifier
+    
+    # @time basis_poly, enforced_sum = induce_sumcheck_poly_parallel(config.initial_dim, sks_vks, proof.initial_ligero_proof.opened_rows, partial_evals_0, queries, alpha) 
+    # sumcheck_verifier, g1 = SumcheckVerifierInstance(MultiLinearPoly(basis_poly), enforced_sum, proof.sumcheck_transcript.tr)
+    
+    sumcheck_verifier = SumcheckVerifier(proof.sumcheck_transcript.tr)
+    enforced_sum = register_new_fold!(sumcheck_verifier, config.initial_dim, sks_vks, queries, alpha, proof.initial_ligero_proof.opened_rows, partial_evals_0)
+    g1 = start!(sumcheck_verifier, enforced_sum)
     absorb!(fs, g1)
+
     for i in 1:config.recursive_steps
         rs = Vector{U}(undef, config.ks[i])
         for k in 1:config.ks[i]
@@ -52,7 +59,7 @@ function verifier(config::VerifierConfig, proof::FinalizedLigeritoProof{T, U}) w
             f = MultiLinearPoly(proof.final_ligero_proof.yr)
             f_eval = partial_eval(f, [final_r]).evals
 
-            ok = Sumcheck.verify_partial(sumcheck_verifier, final_r, f_eval)
+            ok = Sumcheck.verify(sumcheck_verifier, final_r, f_eval)
             return ok
         end 
 
@@ -68,9 +75,9 @@ function verifier(config::VerifierConfig, proof::FinalizedLigeritoProof{T, U}) w
 
         # TODO! add this to the verifier config: 
         sks_vks = eval_sk_at_vks(2^config.log_dims[i], U)
-        basis_poly, enforced_sum = induce_sumcheck_poly_parallel(config.log_dims[i], sks_vks, liger_proof.opened_rows, rs, queries, alpha)
+        enforced_sum = register_new_fold!(sumcheck_verifier, config.log_dims[i], sks_vks, queries, alpha, liger_proof.opened_rows, rs)
+        gl_i = verifier_introduce_new!(sumcheck_verifier, enforced_sum)
 
-        gl_i = introduce_new!(sumcheck_verifier, MultiLinearPoly(basis_poly), enforced_sum)
         absorb!(fs, gl_i)
 
         beta = get_field(fs, U)

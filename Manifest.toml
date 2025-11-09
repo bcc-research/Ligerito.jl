@@ -36,7 +36,7 @@ version = "0.1.0"
 
 [[deps.BinaryReedSolomon]]
 deps = ["BinaryFields"]
-git-tree-sha1 = "055c4107c715829d1a624455922a48c5051a0e6f"
+git-tree-sha1 = "02e8493492c67e40c2a7e4264193f60f9fd1503a"
 repo-rev = "main"
 repo-subdir = "BinaryReedSolomon"
 repo-url = "https://github.com/bcc-research/ligerito-impl.git"
@@ -129,6 +129,10 @@ version = "0.3.29"
     ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
     ChangesOfVariables = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
     InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
+
+[[deps.Logging]]
+uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+version = "1.11.0"
 
 [[deps.Markdown]]
 deps = ["Base64"]
@@ -258,8 +262,8 @@ uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "7.7.0+0"
 
 [[deps.Sumcheck]]
-deps = ["BinaryFields", "MultilinearPoly"]
-git-tree-sha1 = "fb200ca8d80f824fd48d5d5bc5c565bbd78708b4"
+deps = ["BinaryFields", "BinaryReedSolomon", "MultilinearPoly", "Test"]
+git-tree-sha1 = "76a80401c1432179615ac25a0cdc6fecf511573d"
 repo-rev = "main"
 repo-subdir = "Sumcheck"
 repo-url = "https://github.com/bcc-research/ligerito-impl.git"
@@ -270,6 +274,11 @@ version = "0.1.0"
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 version = "1.0.3"
+
+[[deps.Test]]
+deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
+uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+version = "1.11.0"
 
 [[deps.ThreadTools]]
 git-tree-sha1 = "e335e40d393ccc1e1aa8087632989e856db988e0"
